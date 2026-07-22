@@ -1,6 +1,4 @@
 import { defineNuxtConfig } from "nuxt/config";
-import vue from "@vitejs/plugin-vue";
-import type { InputPluginOption } from "rollup";
 import process from "process";
 
 const configuredSiteUrl = process.env.NUXT_SITE_URL ?? process.env.NUXT_PUBLIC_SITE_URL ?? process.env.NUXT_PUBLIC_APP_URL;
@@ -260,10 +258,7 @@ export default defineNuxtConfig({
     compressPublicAssets: true,
     experimental: {
       websocket: true
-    },
-    rollupConfig: {
-      plugins: [vue() as unknown as InputPluginOption],
-    },
+    }
   },
   vite: {
     optimizeDeps: {
