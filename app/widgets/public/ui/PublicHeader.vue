@@ -90,7 +90,7 @@
           tabindex="-1"
           @keydown.esc.prevent="closeMobileMenu"
           @keydown.tab="trapMobileFocus"
-          class="absolute inset-y-3 right-3 flex w-[min(390px,calc(100vw-1.5rem))] flex-col rounded-4xl bg-white p-4 shadow-2xl shadow-zinc-950/25 ">
+          class="absolute inset-y-3 left-3 right-3 flex flex-col rounded-4xl bg-white p-4 shadow-2xl shadow-zinc-950/25 sm:left-auto sm:w-[390px] sm:max-w-[calc(100vw-1.5rem)] ">
           <div class="flex items-center justify-between gap-4">
             <NuxtLink to="/" class="flex items-center gap-3 rounded-3xl" aria-label="На главную ПроТех76"
               @click="closeMobileMenu">
@@ -129,16 +129,19 @@
 
           </div>
 
-          <div class="mt-auto space-y-3 pt-6 mr-7">
+          <div class="mt-auto space-y-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-6">
             <div v-if="auth.user" class="rounded-[1.75rem] bg-[#f9fafb] p-4 ">
               <p class="text-xs uppercase tracking-[0.2em] text-zinc-400">Аккаунт</p>
-              <p class="mt-2 truncate font-semibold text-zinc-950 ">
-                {{ auth.user.name || auth.user.email }}
-              </p>
-              <UButton color="neutral" variant="soft" icon="i-lucide-log-out" block class="mt-4 min-h-11 rounded-full"
-                :loading="auth.pending" @click="logout">
-                Выйти
-              </UButton>
+              <div class="mt-2 flex min-w-0 items-center gap-3">
+                <p class="min-w-0 flex-1 truncate font-semibold text-zinc-950 ">
+                  {{ auth.user.name || auth.user.email }}
+                </p>
+                <UTooltip text="Выйти">
+                  <UButton color="neutral" variant="soft" icon="i-lucide-log-out" square
+                    class="!h-11 !w-11 shrink-0 rounded-full"
+                    :loading="auth.pending" aria-label="Выйти" @click="logout" />
+                </UTooltip>
+              </div>
             </div>
             <UButton v-else color="primary" icon="i-lucide-user-round" block to="/auth" size="lg" class="rounded-full"
               @click="closeMobileMenu">

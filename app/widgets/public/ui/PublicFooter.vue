@@ -88,11 +88,11 @@ const footerGroups = [
     ]
   },
   {
-    title: "Сервис",
+    title: "О компании",
     links: [
-      { icon: "i-lucide-shield-check", label: "Гарантия", to: "/" },
-      { icon: "i-lucide-refresh-cw", label: "Возврат", to: "/" },
-      { icon: "i-lucide-message-circle-question", label: "Вопросы", to: "/" }
+      { icon: "i-lucide-building-2", label: "О компании", to: "/about" },
+      { icon: "i-lucide-phone", label: "+79201089344", to: "tel:+79201089344" },
+      { icon: "i-lucide-phone", label: "+79201309744", to: "tel:+79201309744" }
     ]
   }
 ];

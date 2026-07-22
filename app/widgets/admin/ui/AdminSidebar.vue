@@ -83,7 +83,7 @@
       </div>
     </nav>
 
-    <div v-if="showCollapse" :class="[
+    <div v-if="!collapsed || showCollapse" :class="[
       'border-t border-zinc-100 p-3',
       collapsed ? 'space-y-2' : 'space-y-3'
     ]">
@@ -113,7 +113,7 @@
         </UTooltip>
       </div>
 
-      <button v-if="!collapsed" type="button"
+      <button v-if="!collapsed && showCollapse" type="button"
         class="flex w-full items-center gap-3 rounded-2xl px-3 py-2 text-left text-xs font-medium text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-950"
         @click="ui.toggleSidebar()">
         <PanelLeftClose class="size-4" />

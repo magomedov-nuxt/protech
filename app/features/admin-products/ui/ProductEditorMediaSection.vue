@@ -1,50 +1,18 @@
 <template>
   <section class="space-y-5 rounded-3xl bg-white p-4 shadow-sm shadow-zinc-950/5 ring-1 ring-zinc-200/70 sm:p-5">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-start gap-3">
-        <span class="grid size-10 shrink-0 place-items-center rounded-2xl bg-amber-50 text-amber-700">
-          <UIcon name="i-lucide-images"
-            class="size-5"
-          />
-        </span>
-        <div>
-          <h3 class="text-lg font-semibold text-zinc-950">
-            Изображения
-          </h3>
-          <p class="mt-1 text-sm leading-6 text-zinc-500">
-            Основное фото для каталога и дополнительные снимки в галерее.
-          </p>
-        </div>
-      </div>
-      <div class="flex flex-wrap gap-2">
-        <input ref="galleryImageInput"
-          class="hidden"
-          type="file"
-          accept="image/png,image/jpeg,image/webp,image/gif"
-          @change="emit('uploadGalleryImage', $event)"
-        >
-        <UButton color="neutral"
-          variant="outline"
-          type="button"
-          size="lg"
-          :disabled="uploadingGallery"
-          :loading="uploadingGallery"
-          class="min-h-11 w-full min-w-36 justify-center rounded-full sm:w-auto"
-          @click="openGalleryImagePicker"
-        >
-          <Upload class="size-4" />
-          В галерею
-        </UButton>
-        <UButton color="primary"
-          variant="soft"
-          type="button"
-          size="lg"
-          class="min-h-11 rounded-full px-5"
-          @click="emit('addGalleryUrl')"
-        >
-          <Plus class="size-4" />
-          URL
-        </UButton>
+    <div class="flex items-start gap-3">
+      <span class="grid size-10 shrink-0 place-items-center rounded-2xl bg-amber-50 text-amber-700">
+        <UIcon name="i-lucide-images"
+          class="size-5"
+        />
+      </span>
+      <div>
+        <h3 class="text-lg font-semibold text-zinc-950">
+          Изображения
+        </h3>
+        <p class="mt-1 text-sm leading-6 text-zinc-500">
+          Основное фото для каталога и дополнительные снимки в галерее.
+        </p>
       </div>
     </div>
 
@@ -101,9 +69,41 @@
       </div>
 
       <div class="min-w-0 space-y-4 rounded-2xl bg-[#f9fafb] p-3 shadow-inner shadow-zinc-950/5">
-        <p class="text-sm font-semibold text-zinc-500">
-          Галерея
-        </p>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p class="text-sm font-semibold text-zinc-500">
+            Галерея
+          </p>
+          <div class="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
+            <input ref="galleryImageInput"
+              class="hidden"
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              @change="emit('uploadGalleryImage', $event)"
+            >
+            <UButton color="neutral"
+              variant="outline"
+              type="button"
+              size="lg"
+              :disabled="uploadingGallery"
+              :loading="uploadingGallery"
+              class="min-h-11 justify-center rounded-full px-4 sm:min-w-36"
+              @click="openGalleryImagePicker"
+            >
+              <Upload class="size-4" />
+              Загрузить
+            </UButton>
+            <UButton color="primary"
+              variant="soft"
+              type="button"
+              size="lg"
+              class="min-h-11 justify-center rounded-full px-4"
+              @click="emit('addGalleryUrl')"
+            >
+              <Plus class="size-4" />
+              URL
+            </UButton>
+          </div>
+        </div>
 
         <UAlert v-if="fieldErrors.productImages"
           color="error"
