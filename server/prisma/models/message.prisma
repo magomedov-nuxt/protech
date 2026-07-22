@@ -1,0 +1,30 @@
+enum MessageType {
+    DELIVERY
+    STOCK
+    PRICE
+    FAQ_ANSWER
+    REVIEW_ANSWER
+    SUPPORT
+}
+
+enum MessageSenderRole {
+    USER
+    ADMIN
+    SYSTEM
+}
+
+model Message {
+    id          Int               @id @default(autoincrement())
+    userId      String            @map("user_id")
+    user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+    messageType MessageType       @map("message_type")
+    senderRole  MessageSenderRole @default(SYSTEM) @map("sender_role")
+    message     String
+    readAt      DateTime?         @map("read_at")
+
+    createdAt DateTime @default(now())
+
+    @@index([userId, createdAt])
+    @@index([senderRole, readAt])
+    @@map("message")
+}

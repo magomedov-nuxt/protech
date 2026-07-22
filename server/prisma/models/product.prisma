@@ -1,0 +1,136 @@
+model Category {
+    id   Int    @id @default(autoincrement())
+    name String @unique
+
+    products Product[]
+
+    @@map("category")
+}
+
+model Product {
+    id           Int      @id @default(autoincrement())
+    name         String
+    description  String
+    currentPrice Decimal  @map("current_price")
+    costPrice    Decimal? @map("cost_price")
+    oldPrice     Decimal? @map("old_price")
+    article      String   @unique
+    mainImage    String   @map("main_image")
+    ozonLink     String?  @map("ozon_link")
+    categoryId   Int      @map("category_id")
+    category     Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+    isActive     Boolean  @default(true) @map("is_active")
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    productImages     ProductImage[]
+    productPrices     ProductPrice[]
+    productStocks     ProductStock[]
+    productAttributes ProductAttribute[]
+    favoriteProducts  FavoriteProduct[]
+    cartItems         CartItem[]
+    reviews           Review[]
+    orderItems        OrderItem[]
+    stockMovements    StockMovement[]
+
+    @@index([categoryId, isActive])
+    @@map("product")
+}
+
+model ProductImage {
+    id        Int     @id @default(autoincrement())
+    productId Int     @map("product_id")
+    product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+    url       String
+
+    @@index([productId])
+    @@map("product_image")
+}
+
+model ProductPrice {
+    id        Int     @id @default(autoincrement())
+    productId Int     @map("product_id")
+    product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+    value     Decimal
+
+    createdAt DateTime @default(now()) @map("created_at")
+
+    @@index([productId, createdAt(sort: Desc)])
+    @@map("product_price")
+}
+
+model ProductStock {
+    id        Int     @id @default(autoincrement())
+    productId Int     @unique @map("product_id")
+    product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+    quantity  Int     @default(0)
+
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("product_stock")
+}
+
+enum StockMovementType {
+    RESERVE
+    RELEASE
+    ADJUSTMENT
+}
+
+model StockMovement {
+    id            Int               @id @default(autoincrement())
+    productId     Int               @map("product_id")
+    product       Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+    orderId       Int?              @map("order_id")
+    order         Order?            @relation(fields: [orderId], references: [id], onDelete: SetNull)
+    type          StockMovementType
+    quantityDelta Int               @map("quantity_delta")
+    quantityAfter Int               @map("quantity_after")
+    reason        String?
+
+    createdAt DateTime @default(now()) @map("created_at")
+
+    @@index([productId, createdAt])
+    @@index([orderId])
+    @@index([type, createdAt])
+    @@index([createdAt])
+    @@map("stock_movement")
+}
+
+model Attribute {
+    id   Int    @id @default(autoincrement())
+    name String
+    unit String @default("")
+
+    productAttributes ProductAttribute[]
+
+    @@unique([name, unit])
+    @@map("attribute")
+}
+
+model ProductAttribute {
+    id          Int       @id @default(autoincrement())
+    productId   Int       @map("product_id")
+    product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+    attributeId Int       @map("attribute_id")
+    attribute   Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+    value       String
+
+    @@unique([productId, attributeId])
+    @@index([attributeId, value])
+    @@map("product_attribute")
+}
+
+model FavoriteProduct {
+    id        Int     @id @default(autoincrement())
+    productId Int     @map("product_id")
+    product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+    userId    String  @map("user_id")
+    user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now()) @map("created_at")
+
+    @@unique([userId, productId])
+    @@index([productId])
+    @@map("favorite_product")
+}

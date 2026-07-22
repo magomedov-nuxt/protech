@@ -1,0 +1,17 @@
+.nuxt
+.output
+dist
+node_modules
+coverage
+.codex-dev.*.log
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+.env
+.env.*
+!.env.example

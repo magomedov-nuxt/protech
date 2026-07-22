@@ -1,0 +1,46 @@
+model Review {
+    id            Int      @id @default(autoincrement())
+    userId        String   @map("user_id")
+    user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    productId     Int      @map("product_id")
+    product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+    rating        Int
+    advantages    String?
+    disadvantages String?
+    comment       String?
+    isAnswered    Boolean? @default(false) @map("is_answered")
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    reviewPhotos  ReviewPhoto[]
+    reviewAnswers ReviewAnswer[]
+
+    @@unique([userId, productId])
+    @@index([productId])
+    @@map("review")
+}
+
+model ReviewPhoto {
+    id       Int    @id @default(autoincrement())
+    reviewId Int    @map("review_id")
+    review   Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+    url      String
+
+    @@index([reviewId])
+    @@map("review_photo")
+}
+
+model ReviewAnswer {
+    id       Int     @id @default(autoincrement())
+    reviewId Int     @map("review_id")
+    review   Review  @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+    text     String
+    userId   String? @map("user_id")
+    user     User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+    createdAt DateTime @default(now()) @map("created_at")
+
+    @@index([reviewId])
+    @@map("review_answer")
+}

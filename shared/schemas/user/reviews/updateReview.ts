@@ -1,0 +1,10 @@
+import type z from "zod";
+import { createReviewSchema } from "./createReview";
+
+export const updateReviewSchema = createReviewSchema
+	.partial()
+	.refine((data) => Object.keys(data).length > 0, {
+		message: "Передайте хотя бы одно поле для обновления",
+	});
+
+export type UpdateReviewInput = z.infer<typeof updateReviewSchema>;

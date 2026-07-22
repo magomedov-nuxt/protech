@@ -1,0 +1,30 @@
+enum AuditAction {
+    CREATE
+    UPDATE
+    DELETE
+    BULK_UPDATE
+    BULK_DELETE
+    STOCK_ADJUSTMENT
+    ANSWER
+    ORDER_STATUS
+    PAYMENT_STATUS
+    LOGIN
+    LOGOUT
+}
+
+model AuditLog {
+    id         Int         @id @default(autoincrement())
+    adminId    String?     @map("admin_id")
+    admin      User?       @relation(fields: [adminId], references: [id], onDelete: SetNull)
+    action     AuditAction
+    entityType String      @map("entity_type")
+    entityId   String?     @map("entity_id")
+    summary    String
+    metadata   Json?
+    createdAt  DateTime    @default(now()) @map("created_at")
+
+    @@index([adminId, createdAt])
+    @@index([entityType, createdAt])
+    @@index([action, createdAt])
+    @@map("audit_log")
+}
