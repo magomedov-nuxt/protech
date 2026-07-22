@@ -11,7 +11,7 @@ vi.mock("../server/utils/orderStatusNotification", () => ({
 
 async function importOrderExpiry() {
   vi.resetModules();
-  vi.stubEnv("DATABASE_URL", "file:./test.db");
+  vi.stubEnv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/protech_test");
 
   return await import("../server/utils/orderExpiry");
 }

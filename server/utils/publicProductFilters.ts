@@ -135,12 +135,14 @@ export function buildPublicProductWhere(
         OR: [
           {
             name: {
-              contains: search
+              contains: search,
+              mode: "insensitive"
             }
           },
           {
             description: {
-              contains: search
+              contains: search,
+              mode: "insensitive"
             }
           }
         ]

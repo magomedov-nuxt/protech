@@ -27,10 +27,10 @@ export default defineEventHandler(async (event) => {
   const [salesRows, paymentMethodRows, obtainingMethodRows, categoryOptions] = await Promise.all([
     prisma.$queryRaw<SalesTotalsRow[]>`
       SELECT
-        COUNT(DISTINCT o."id") AS "orders",
-        COALESCE(SUM(oi."quantity"), 0) AS "quantity",
-        COALESCE(SUM(oi."line_total"), 0) AS "revenue",
-        COALESCE(SUM(COALESCE(oi."cost_price", 0) * oi."quantity"), 0) AS "cost"
+        COUNT(DISTINCT o."id")::int AS "orders",
+        COALESCE(SUM(oi."quantity"), 0)::int AS "quantity",
+        COALESCE(SUM(oi."line_total"), 0)::numeric AS "revenue",
+        COALESCE(SUM(COALESCE(oi."cost_price", 0) * oi."quantity"), 0)::numeric AS "cost"
       FROM "payment" p
       JOIN "order" o ON o."id" = p."order_id"
       JOIN "order_item" oi ON oi."order_id" = o."id"
@@ -38,27 +38,27 @@ export default defineEventHandler(async (event) => {
     `,
     prisma.$queryRaw<BreakdownRow[]>`
       SELECT
-        o."payment_method" AS "key",
-        COUNT(DISTINCT o."id") AS "orders",
-        COALESCE(SUM(p."amount"), 0) AS "revenue"
+        o."payment_method"::text AS "key",
+        COUNT(DISTINCT o."id")::int AS "orders",
+        COALESCE(SUM(p."amount"), 0)::numeric AS "revenue"
       FROM "order" o
       LEFT JOIN "payment" p ON p."order_id" = o."id" AND p."payment_status" = 'PAID'
       WHERE o."created_at" >= ${query.startDate}
         AND o."created_at" <= ${query.endDate}
-      GROUP BY o."payment_method"
-      ORDER BY "orders" DESC
+      GROUP BY 1
+      ORDER BY 2 DESC
     `,
     prisma.$queryRaw<BreakdownRow[]>`
       SELECT
-        o."obtaining_method" AS "key",
-        COUNT(DISTINCT o."id") AS "orders",
-        COALESCE(SUM(p."amount"), 0) AS "revenue"
+        o."obtaining_method"::text AS "key",
+        COUNT(DISTINCT o."id")::int AS "orders",
+        COALESCE(SUM(p."amount"), 0)::numeric AS "revenue"
       FROM "order" o
       LEFT JOIN "payment" p ON p."order_id" = o."id" AND p."payment_status" = 'PAID'
       WHERE o."created_at" >= ${query.startDate}
         AND o."created_at" <= ${query.endDate}
-      GROUP BY o."obtaining_method"
-      ORDER BY "orders" DESC
+      GROUP BY 1
+      ORDER BY 2 DESC
     `,
     getCategoryOptions()
   ]);

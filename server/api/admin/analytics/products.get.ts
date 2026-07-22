@@ -30,10 +30,10 @@ export default defineEventHandler(async (event) => {
   const rows = await prisma.$queryRaw<ProductAnalyticsRow[]>`
     SELECT
       oi."product_name" AS "name",
-      COUNT(DISTINCT o."id") AS "orders",
-      COALESCE(SUM(oi."quantity"), 0) AS "quantity",
-      COALESCE(SUM(oi."line_total"), 0) AS "revenue",
-      COALESCE(SUM(COALESCE(oi."cost_price", 0) * oi."quantity"), 0) AS "cost"
+      COUNT(DISTINCT o."id")::int AS "orders",
+      COALESCE(SUM(oi."quantity"), 0)::int AS "quantity",
+      COALESCE(SUM(oi."line_total"), 0)::numeric AS "revenue",
+      COALESCE(SUM(COALESCE(oi."cost_price", 0) * oi."quantity"), 0)::numeric AS "cost"
     FROM "payment" p
     JOIN "order" o ON o."id" = p."order_id"
     JOIN "order_item" oi ON oi."order_id" = o."id"

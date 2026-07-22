@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
   const rows = await prisma.$queryRaw<CategoryAnalyticsRow[]>`
     SELECT
       oi."category_name" AS "categoryName",
-      COALESCE(SUM(oi."line_total"), 0) AS "revenue"
+      COALESCE(SUM(oi."line_total"), 0)::numeric AS "revenue"
     FROM "payment" p
     JOIN "order" o ON o."id" = p."order_id"
     JOIN "order_item" oi ON oi."order_id" = o."id"

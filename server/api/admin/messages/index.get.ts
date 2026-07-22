@@ -21,38 +21,24 @@ export default defineEventHandler(async (event) => {
   const limit = getBoundedPositiveIntQueryParam(query.limit, 100, 200);
 
   const rows = await prisma.$queryRaw<ConversationRow[]>`
-    WITH ranked_messages AS (
-      SELECT
+    WITH last_messages AS (
+      SELECT DISTINCT ON (m."user_id")
         m."id",
         m."user_id",
         m."sender_role",
         m."message",
         m."read_at",
-        m."createdAt",
-        ROW_NUMBER() OVER (
-          PARTITION BY m."user_id"
-          ORDER BY m."createdAt" DESC, m."id" DESC
-        ) AS "rowNumber"
+        m."createdAt"
       FROM "message" m
-    ),
-    last_messages AS (
-      SELECT
-        rm."id",
-        rm."user_id",
-        rm."sender_role",
-        rm."message",
-        rm."read_at",
-        rm."createdAt"
-      FROM ranked_messages rm
-      WHERE rm."rowNumber" = 1
+      ORDER BY m."user_id", m."createdAt" DESC
     ),
     message_counts AS (
-      SELECT m."user_id", COUNT(*) AS "totalMessages"
+      SELECT m."user_id", COUNT(*)::int AS "totalMessages"
       FROM "message" m
       GROUP BY m."user_id"
     ),
     unread_counts AS (
-      SELECT m."user_id", COUNT(*) AS "unreadCount"
+      SELECT m."user_id", COUNT(*)::int AS "unreadCount"
       FROM "message" m
       WHERE m."sender_role" = 'USER' AND m."read_at" IS NULL
       GROUP BY m."user_id"
@@ -68,8 +54,8 @@ export default defineEventHandler(async (event) => {
       lm."message" AS "lastMessageText",
       lm."read_at" AS "lastReadAt",
       lm."createdAt" AS "lastCreatedAt",
-      COALESCE(uc."unreadCount", 0) AS "unreadCount",
-      COALESCE(mc."totalMessages", 0) AS "totalMessages"
+      COALESCE(uc."unreadCount", 0)::int AS "unreadCount",
+      COALESCE(mc."totalMessages", 0)::int AS "totalMessages"
     FROM last_messages lm
     JOIN "user" u ON u."id" = lm."user_id"
     LEFT JOIN message_counts mc ON mc."user_id" = u."id"

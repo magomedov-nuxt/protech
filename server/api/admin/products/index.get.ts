@@ -14,8 +14,8 @@ export default defineEventHandler(async (event) => {
     ...(search
       ? {
         OR: [
-          { name: { contains: search } },
-          { article: { contains: search } }
+          { name: { contains: search, mode: "insensitive" } },
+          { article: { contains: search, mode: "insensitive" } }
         ]
       }
       : {}),
