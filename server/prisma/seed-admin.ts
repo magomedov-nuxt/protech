@@ -3,7 +3,7 @@ import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient, Role } from "@prisma/client";
 import { hashPassword } from "better-auth/crypto";
-import { getDatabaseUrl } from "../utils/databaseUrl";
+import { getDatabasePoolConfig } from "../utils/databaseUrl";
 
 const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
 const password = process.env.ADMIN_PASSWORD;
@@ -14,7 +14,7 @@ if (!email || !password) {
 	throw new Error("ADMIN_EMAIL and ADMIN_PASSWORD are required");
 }
 
-const pool = new Pool({ connectionString: getDatabaseUrl() });
+const pool = new Pool(getDatabasePoolConfig());
 const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
 try {

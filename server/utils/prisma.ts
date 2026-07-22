@@ -1,9 +1,7 @@
 import { Pool, type PoolClient } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
-import { getDatabaseUrl } from "./databaseUrl";
-
-const connectionString = getDatabaseUrl();
+import { getDatabasePoolConfig } from "./databaseUrl";
 
 function getIntegerEnv(name: string, fallback: number, min: number, max: number) {
   const value = Number(process.env[name]);
@@ -76,7 +74,7 @@ function serializeClientQueries(client: PoolClient) {
 
 function createPool() {
   const pool = new Pool({
-    connectionString,
+    ...getDatabasePoolConfig(),
     max: maxPoolSize,
     min: minPoolSize,
     statement_timeout: getIntegerEnv("DATABASE_STATEMENT_TIMEOUT_MS", 10000, 1000, 60000),

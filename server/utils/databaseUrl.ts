@@ -1,3 +1,5 @@
+import type { PoolConfig } from "pg";
+
 type DatabaseEnv = Record<string, string | undefined>;
 
 const DEFAULT_POSTGRES_PORT = "5432";
@@ -23,7 +25,27 @@ const NAME_KEYS = [
 ];
 const SSL_MODE_KEYS = ["DATABASE_SSLMODE", "DB_SSLMODE", "PGSSLMODE"];
 const SSL_ENABLED_KEYS = ["DATABASE_SSL", "DB_SSL", "POSTGRES_SSL"];
+const SSL_ACCEPT_KEYS = ["DATABASE_SSLACCEPT", "DB_SSLACCEPT", "POSTGRES_SSLACCEPT"];
+const SSL_REJECT_UNAUTHORIZED_KEYS = [
+  "DATABASE_SSL_REJECT_UNAUTHORIZED",
+  "DB_SSL_REJECT_UNAUTHORIZED",
+  "POSTGRES_SSL_REJECT_UNAUTHORIZED",
+  "PGSSLREJECTUNAUTHORIZED"
+];
 const SCHEMA_KEYS = ["DATABASE_SCHEMA", "DB_SCHEMA", "PGSCHEMA"];
+
+const handledPgQueryParams = new Set([
+  "schema",
+  "ssl",
+  "sslaccept",
+  "sslmode",
+  "sslrootcert",
+  "sslcert",
+  "sslidentity",
+  "sslkey",
+  "sslpassword",
+  "uselibpqcompat"
+]);
 
 type EnvValue = {
   key: string;
@@ -38,6 +60,8 @@ type ComponentConfig = {
   name?: EnvValue;
   sslMode?: EnvValue;
   sslEnabled?: EnvValue;
+  sslAccept?: EnvValue;
+  sslRejectUnauthorized?: EnvValue;
   schema?: EnvValue;
   presentKeys: string[];
 };
@@ -87,6 +111,8 @@ function readComponentConfig(env: DatabaseEnv): ComponentConfig {
     name: readFirstEnv(env, NAME_KEYS),
     sslMode: readFirstEnv(env, SSL_MODE_KEYS),
     sslEnabled: readFirstEnv(env, SSL_ENABLED_KEYS),
+    sslAccept: readFirstEnv(env, SSL_ACCEPT_KEYS),
+    sslRejectUnauthorized: readFirstEnv(env, SSL_REJECT_UNAUTHORIZED_KEYS),
     schema: readFirstEnv(env, SCHEMA_KEYS)
   };
 
@@ -160,7 +186,7 @@ function normalizeHost(host: string, source: string) {
 
 function readSslMode(config: ComponentConfig) {
   if (config.sslMode) {
-    return config.sslMode.value;
+    return normalizeSslMode(config.sslMode.value, config.sslMode.key);
   }
 
   if (!config.sslEnabled) {
@@ -173,14 +199,99 @@ function readSslMode(config: ComponentConfig) {
     return "require";
   }
 
+  if (["no-verify", "accept-invalid-certs", "accept_invalid_certs", "insecure"].includes(enabled)) {
+    return "no-verify";
+  }
+
+  if (["prefer", "verify-ca", "verify-full"].includes(enabled)) {
+    return enabled;
+  }
+
+  if (["strict"].includes(enabled)) {
+    return "verify-full";
+  }
+
   if (["0", "false", "no", "disable", "disabled"].includes(enabled)) {
     return "disable";
   }
 
-  throw new Error(`${config.sslEnabled.key} must be true, false, require or disable`);
+  throw new Error(
+    `${config.sslEnabled.key} must be true, false, require, no-verify, prefer, verify-ca, verify-full or disable`
+  );
 }
 
-function normalizeDatabaseUrl(rawUrl: string, source: string) {
+function normalizeSslMode(value: string, source: string) {
+  const sslMode = value.toLowerCase();
+
+  if (["disable", "prefer", "require", "verify-ca", "verify-full", "no-verify"].includes(sslMode)) {
+    return sslMode;
+  }
+
+  throw new Error(`${source} must be one of disable, prefer, require, verify-ca, verify-full or no-verify`);
+}
+
+function readSslAccept(config: ComponentConfig) {
+  if (config.sslAccept) {
+    return normalizeSslAccept(config.sslAccept.value, config.sslAccept.key);
+  }
+
+  if (!config.sslRejectUnauthorized) {
+    return undefined;
+  }
+
+  const rejectUnauthorized = config.sslRejectUnauthorized.value.toLowerCase();
+
+  if (["0", "false", "no", "accept-invalid-certs", "accept_invalid_certs"].includes(rejectUnauthorized)) {
+    return "accept_invalid_certs";
+  }
+
+  if (["1", "true", "yes", "strict"].includes(rejectUnauthorized)) {
+    return "strict";
+  }
+
+  throw new Error(`${config.sslRejectUnauthorized.key} must be true, false, strict or accept_invalid_certs`);
+}
+
+function normalizeSslAccept(value: string, source: string) {
+  const sslAccept = value.toLowerCase().replace(/-/g, "_");
+
+  if (["strict", "accept_invalid_certs"].includes(sslAccept)) {
+    return sslAccept;
+  }
+
+  throw new Error(`${source} must be strict or accept_invalid_certs`);
+}
+
+function applySslParams(url: URL, config: ComponentConfig) {
+  const configuredSslMode = readSslMode(config);
+  const existingSslMode = url.searchParams.get("sslmode");
+  const sslMode = configuredSslMode ?? (existingSslMode ? normalizeSslMode(existingSslMode, "sslmode") : undefined);
+  const sslAccept = readSslAccept(config) ?? (
+    url.searchParams.get("sslaccept")
+      ? normalizeSslAccept(url.searchParams.get("sslaccept")!, "sslaccept")
+      : undefined
+  );
+
+  if (sslMode === "no-verify") {
+    url.searchParams.set("sslmode", "require");
+    url.searchParams.set("sslaccept", "accept_invalid_certs");
+    return;
+  }
+
+  if (sslMode) {
+    url.searchParams.set("sslmode", sslMode);
+  }
+
+  if (sslMode && sslMode !== "disable" && sslAccept) {
+    url.searchParams.set("sslaccept", sslAccept);
+  }
+
+  if (url.searchParams.get("sslaccept") && !url.searchParams.get("sslmode")) {
+    url.searchParams.set("sslmode", "require");
+  }
+}
+
+function normalizeDatabaseUrl(rawUrl: string, source: string, config: ComponentConfig) {
   const value = cleanEnvValue(rawUrl);
 
   if (!value) {
@@ -220,6 +331,8 @@ function normalizeDatabaseUrl(rawUrl: string, source: string) {
     url.port = DEFAULT_POSTGRES_PORT;
   }
 
+  applySslParams(url, config);
+
   return url.toString();
 }
 
@@ -233,9 +346,16 @@ function buildDatabaseUrlFromComponents(config: ComponentConfig) {
   const normalizedPort = validatePort(port ?? DEFAULT_POSTGRES_PORT, portSource);
   const query = new URLSearchParams();
   const sslMode = readSslMode(config);
+  const sslAccept = readSslAccept(config);
 
   if (sslMode) {
-    query.set("sslmode", sslMode);
+    query.set("sslmode", sslMode === "no-verify" ? "require" : sslMode);
+  }
+
+  if (sslMode === "no-verify") {
+    query.set("sslaccept", "accept_invalid_certs");
+  } else if (sslMode && sslMode !== "disable" && sslAccept) {
+    query.set("sslaccept", sslAccept);
   }
 
   if (config.schema) {
@@ -251,7 +371,8 @@ function buildDatabaseUrlFromComponents(config: ComponentConfig) {
 
   return normalizeDatabaseUrl(
     `postgresql://${credentials}@${normalizedHost}:${normalizedPort}/${path}${search}`,
-    "database component variables"
+    "database component variables",
+    config
   );
 }
 
@@ -266,7 +387,7 @@ export function getDatabaseUrl(env: DatabaseEnv = process.env) {
   const configuredUrl = readFirstEnv(env, DATABASE_URL_KEYS);
 
   if (configuredUrl) {
-    return normalizeDatabaseUrl(configuredUrl.value, configuredUrl.key);
+    return normalizeDatabaseUrl(configuredUrl.value, configuredUrl.key, componentConfig);
   }
 
   if (componentConfig.presentKeys.length > 0) {
@@ -279,4 +400,56 @@ export function getDatabaseUrl(env: DatabaseEnv = process.env) {
   throw new Error(
     "Database connection is not configured. Set DATABASE_URL or DB_HOST, DB_PORT, DB_USER, DB_PASSWORD and DB_NAME."
   );
+}
+
+function decodeUrlValue(value: string) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function readPoolSslConfig(url: URL): PoolConfig["ssl"] | undefined {
+  const ssl = url.searchParams.get("ssl");
+  const sslMode = url.searchParams.get("sslmode");
+  const sslAccept = url.searchParams.get("sslaccept");
+
+  if (ssl === "0" || ssl === "false" || sslMode === "disable") {
+    return false;
+  }
+
+  if (sslAccept === "accept_invalid_certs" || sslMode === "no-verify") {
+    return { rejectUnauthorized: false };
+  }
+
+  if (ssl === "1" || ssl === "true" || sslMode) {
+    return true;
+  }
+
+  return undefined;
+}
+
+export function getDatabasePoolConfig(env: DatabaseEnv = process.env): PoolConfig {
+  const url = new URL(getDatabaseUrl(env));
+  const poolConfig: PoolConfig = {
+    host: url.hostname,
+    port: Number(url.port || DEFAULT_POSTGRES_PORT),
+    database: decodeUrlValue(url.pathname.replace(/^\//, "")),
+    user: url.username ? decodeUrlValue(url.username) : undefined,
+    password: url.password ? decodeUrlValue(url.password) : undefined
+  };
+  const ssl = readPoolSslConfig(url);
+
+  if (ssl !== undefined) {
+    poolConfig.ssl = ssl;
+  }
+
+  for (const [key, value] of url.searchParams) {
+    if (!handledPgQueryParams.has(key)) {
+      (poolConfig as Record<string, unknown>)[key] = value;
+    }
+  }
+
+  return poolConfig;
 }

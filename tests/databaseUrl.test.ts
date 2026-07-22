@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getDatabaseUrl } from "../server/utils/databaseUrl";
+import { getDatabasePoolConfig, getDatabaseUrl } from "../server/utils/databaseUrl";
 
 describe("database URL configuration", () => {
   it("normalizes DATABASE_URL values and adds the default PostgreSQL port", () => {
@@ -23,6 +23,34 @@ describe("database URL configuration", () => {
     expect(url).toBe(
       "postgresql://protech_user:p%23s%2Fs%3F%25%40%3A%20word@db.example.com:6543/default_db?sslmode=require"
     );
+  });
+
+  it("supports self-signed PostgreSQL certificates for hosting providers", () => {
+    const env = {
+      DB_HOST: "db.example.com",
+      DB_PORT: "6543",
+      DB_USER: "protech_user",
+      DB_PASSWORD: "password",
+      DB_NAME: "default_db",
+      DB_SSL: "no-verify"
+    };
+
+    expect(getDatabaseUrl(env)).toBe(
+      "postgresql://protech_user:password@db.example.com:6543/default_db?sslmode=require&sslaccept=accept_invalid_certs"
+    );
+    expect(getDatabasePoolConfig(env).ssl).toEqual({ rejectUnauthorized: false });
+  });
+
+  it("can relax certificate verification for a provided DATABASE_URL", () => {
+    const env = {
+      DATABASE_URL: "postgresql://protech_user:password@db.example.com:6543/default_db?sslmode=require",
+      DB_SSL_REJECT_UNAUTHORIZED: "false"
+    };
+
+    expect(getDatabaseUrl(env)).toBe(
+      "postgresql://protech_user:password@db.example.com:6543/default_db?sslmode=require&sslaccept=accept_invalid_certs"
+    );
+    expect(getDatabasePoolConfig(env).ssl).toEqual({ rejectUnauthorized: false });
   });
 
   it("uses host:port values when the port is included in DB_HOST", () => {
