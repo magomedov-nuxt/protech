@@ -245,6 +245,11 @@ body {
   color: var(--admin-warning);
 }
 
+.shop-shell :where(button, a)[data-slot="base"]:is([class~="p-1"], [class~="p-1.5"], [class~="p-2"]):not(:has(> [data-slot="label"])):has(> :where([data-slot="leadingIcon"], [data-slot="trailingIcon"])),
+.admin-shell :where(button, a)[data-slot="base"]:is([class~="p-1"], [class~="p-1.5"], [class~="p-2"]):not(:has(> [data-slot="label"])):has(> :where([data-slot="leadingIcon"], [data-slot="trailingIcon"])) {
+  justify-content: center;
+}
+
 .admin-shell :where(.placeholder\:text-zinc-400)::placeholder,
 .admin-shell :where(input, textarea)::placeholder {
   color: var(--admin-text-muted);
