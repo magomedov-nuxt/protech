@@ -19,17 +19,7 @@
           class="min-h-12 rounded-full px-5 font-semibold shadow-lg shadow-emerald-700/15 transition duration-300 hover:scale-[1.02]">
           Продолжить покупки
         </UButton>
-      </div>
-
-      <div class="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        <div v-for="metric in cartMetrics" :key="metric.label" class="rounded-xl bg-[#f9fafb] px-3 py-2.5">
-          <div class="flex items-center justify-between gap-3">
-            <p class="text-xs text-zinc-500">{{ metric.label }}</p>
-            <UIcon :name="metric.icon" class="size-4 text-zinc-400" />
-          </div>
-          <p class="mt-1 text-lg font-semibold text-zinc-950">{{ metric.value }}</p>
-        </div>
-      </div>
+      </div>    
     </section>
 
     <div v-if="loading" class="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
@@ -102,7 +92,7 @@
 
 <script setup lang="ts">
 import { toast } from "vue-sonner";
-import { formatCurrency, getErrorMessage, toNumber } from "~~/app/shared/lib/shopFormatters";
+import { getErrorMessage } from "~~/app/shared/lib/shopFormatters";
 import { useAuthStore } from "~~/app/stores/auth";
 import { useCartStore } from "~~/app/stores/cart";
 
@@ -114,41 +104,12 @@ useSeoMeta({
 const auth = useAuthStore();
 const cart = useCartStore();
 const loading = ref(true);
-const discountAmount = computed(() => cart.items.reduce((sum, item) => {
-  const oldPrice = toNumber(item.product.oldPrice);
-  const currentPrice = toNumber(item.product.currentPrice);
 
-  return oldPrice > currentPrice
-    ? sum + (oldPrice - currentPrice) * item.quantity
-    : sum;
-}, 0));
 const hasBlockingItems = computed(() => cart.items.some((item) => (
   !item.product.isActive ||
   item.product.stockQuantity <= 0 ||
   item.quantity > item.product.stockQuantity
 )));
-const cartMetrics = computed(() => [
-  {
-    icon: "i-lucide-package",
-    label: "Позиций",
-    value: `${cart.items.length}`
-  },
-  {
-    icon: "i-lucide-shopping-bag",
-    label: "Товаров",
-    value: `${cart.totalItems}`
-  },
-  {
-    icon: "i-lucide-badge-percent",
-    label: "Экономия",
-    value: formatCurrency(discountAmount.value)
-  },
-  {
-    icon: "i-lucide-badge-russian-ruble",
-    label: "Итого",
-    value: formatCurrency(cart.subtotal)
-  }
-]);
 
 onMounted(async () => {
   const user = auth.user ?? await auth.fetchMe();

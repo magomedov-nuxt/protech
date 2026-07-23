@@ -25,17 +25,7 @@
             Корзина
           </UButton>
         </div>
-      </div>
-
-      <div class="mt-4 grid gap-2 sm:grid-cols-3">
-        <div v-for="metric in metrics" :key="metric.label" class="rounded-xl bg-[#f9fafb] px-3 py-2.5">
-          <div class="flex items-center justify-between gap-3">
-            <p class="text-xs text-zinc-500">{{ metric.label }}</p>
-            <UIcon :name="metric.icon" class="size-4 text-zinc-400" />
-          </div>
-          <p class="mt-1 text-lg font-semibold text-zinc-950">{{ metric.value }}</p>
-        </div>
-      </div>
+      </div> 
     </section>
 
     <section v-if="loading" class="mt-5 rounded-2xl bg-white/90 p-3 shadow-sm shadow-zinc-950/5 sm:p-4">
@@ -94,16 +84,16 @@
                 class="mt-2 block line-clamp-3 text-base font-semibold tracking-normal text-zinc-950 transition hover:text-emerald-700 sm:line-clamp-2 sm:text-lg">
                 {{ row.product.name }}
               </NuxtLink>
-            </div>
 
-            <div class="min-w-0">
-              <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                <p class="text-lg font-semibold text-zinc-950">
-                  {{ formatCurrency(row.product.currentPrice) }}
-                </p>
-                <p v-if="row.discount" class="text-xs text-zinc-400 line-through">
-                  {{ formatCurrency(row.product.oldPrice) }}
-                </p>
+              <div class="min-w-0 mt-4">
+                <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                  <p class="text-xl font-semibold text-red-600">
+                    {{ formatCurrency(row.product.currentPrice) }}
+                  </p>
+                  <p v-if="row.discount" class="text-xs text-zinc-400 line-through">
+                    {{ formatCurrency(row.product.oldPrice) }}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -155,25 +145,7 @@ const auth = useAuthStore();
 const cart = useCartStore();
 const favorites = useFavoritesStore();
 const loading = ref(true);
-const metrics = computed(() => [
-  {
-    icon: "i-lucide-heart",
-    label: "Сохранено",
-    value: `${favorites.count}`
-  },
-  {
-    icon: "i-lucide-badge-russian-ruble",
-    label: "На сумму",
-    value: formatCurrency(favoritesTotal.value)
-  },
-  {
-    icon: "i-lucide-package-check",
-    label: "В наличии",
-    value: `${availableFavoritesCount.value}`
-  }
-]);
-const favoritesTotal = computed(() => favorites.items.reduce((sum, item) => sum + Number(item.product.currentPrice ?? 0), 0));
-const availableFavoritesCount = computed(() => favorites.items.filter((item) => (item.product.stockQuantity ?? 0) > 0).length);
+
 const favoriteRows = computed(() => favorites.items.map((favorite) => {
   const product = favorite.product;
   const cartItem = cartItemByProductId(product.id);

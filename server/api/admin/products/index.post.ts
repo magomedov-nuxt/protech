@@ -19,6 +19,17 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
+    const currentPriceCreatedAt = new Date();
+    const productPrices = body.oldPrice == null
+      ? [{ value: body.currentPrice, createdAt: currentPriceCreatedAt }]
+      : [
+        {
+          value: body.oldPrice,
+          createdAt: new Date(currentPriceCreatedAt.getTime() - 1_000)
+        },
+        { value: body.currentPrice, createdAt: currentPriceCreatedAt }
+      ];
+
     const product = await prisma.product.create({
       data: {
         name: body.name,
@@ -33,7 +44,7 @@ export default defineEventHandler(async (event) => {
         isActive: body.isActive,
 
         productPrices: {
-          create: { value: body.currentPrice }
+          create: productPrices
         },
 
         productStocks: {

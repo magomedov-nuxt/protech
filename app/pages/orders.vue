@@ -20,16 +20,6 @@
           В каталог
         </UButton>
       </div>
-
-      <div class="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        <div v-for="metric in orderMetrics" :key="metric.label" class="rounded-xl bg-[#f9fafb] px-3 py-2.5">
-          <div class="flex items-center justify-between gap-3">
-            <p class="text-xs text-zinc-500">{{ metric.label }}</p>
-            <UIcon :name="metric.icon" class="size-4 text-zinc-400" />
-          </div>
-          <p class="mt-1 text-lg font-semibold text-zinc-950">{{ metric.value }}</p>
-        </div>
-      </div>
     </section>
 
     <div v-if="loading" class="mt-5 space-y-3">
@@ -80,7 +70,7 @@
 
 <script setup lang="ts">
 import { toast } from "vue-sonner";
-import { formatCurrency, getErrorMessage } from "~~/app/shared/lib/shopFormatters";
+import { getErrorMessage } from "~~/app/shared/lib/shopFormatters";
 import { shopFetch } from "~~/app/shared/lib/shopFetch";
 import type { ShopOrder } from "~~/app/shared/types/shop";
 import { useAuthStore } from "~~/app/stores/auth";
@@ -97,35 +87,12 @@ const selectedOrder = ref<ShopOrder | null>(null);
 const detailsOpen = ref(false);
 const showAllOrders = ref(false);
 const terminalOrderStatuses = new Set<ShopOrder["orderStatus"]>(["COMPLETED", "CANCELLED"]);
-const orderMetrics = computed(() => [
-  {
-    icon: "i-lucide-package-check",
-    label: "Всего",
-    value: `${orders.value.length}`
-  },
-  {
-    icon: "i-lucide-loader-circle",
-    label: "В работе",
-    value: `${activeOrdersCount.value}`
-  },
-  {
-    icon: "i-lucide-circle-check",
-    label: "Завершено",
-    value: `${completedOrdersCount.value}`
-  },
-  {
-    icon: "i-lucide-badge-russian-ruble",
-    label: "Сумма",
-    value: formatCurrency(ordersTotal.value)
-  }
-]);
+
 const activeOrders = computed(() => orders.value.filter(isActiveOrder));
 const historicalOrders = computed(() => orders.value.filter((order) => !isActiveOrder(order)));
 const visibleOrders = computed(() => showAllOrders.value ? orders.value : activeOrders.value);
-const activeOrdersCount = computed(() => activeOrders.value.length);
-const completedOrdersCount = computed(() => orders.value.filter((order) => order.orderStatus === "COMPLETED").length);
+
 const historicalOrdersCount = computed(() => historicalOrders.value.length);
-const ordersTotal = computed(() => orders.value.reduce((sum, order) => sum + Number(order.payment?.amount ?? 0), 0));
 
 onMounted(async () => {
   const user = auth.user ?? await auth.fetchMe();

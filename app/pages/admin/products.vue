@@ -154,16 +154,18 @@
               </div>
             </div>
 
-            <div class="mt-4 grid grid-cols-3 gap-2">
+            <div class="mt-4 grid w-full grid-cols-3 gap-2">
               <UButton color="neutral" variant="ghost" icon="i-lucide-pencil"
-                class="admin-touch-icon min-w-0 justify-center rounded-full bg-zinc-50 px-2 text-xs shadow-sm shadow-zinc-950/5 hover:bg-zinc-100 sm:text-sm"
+                class="admin-touch-icon h-11 w-11 min-w-0 justify-self-center rounded-full bg-zinc-50 p-0 shadow-sm shadow-zinc-950/5 hover:bg-zinc-100 sm:!w-full sm:justify-self-stretch sm:!rounded-xl"
                 aria-label="Редактировать товар" @click="openEdit(product.id)" />
+
               <UButton color="neutral" variant="ghost" icon="i-lucide-image"
-                class="admin-touch-icon min-w-0 justify-center rounded-full bg-zinc-50 px-2 text-xs shadow-sm shadow-zinc-950/5 hover:bg-zinc-100 sm:text-sm"
+                class="admin-touch-icon h-11 w-11 min-w-0 justify-self-center rounded-full bg-zinc-50 p-0 shadow-sm shadow-zinc-950/5 hover:bg-zinc-100 sm:!w-full sm:justify-self-stretch sm:!rounded-xl"
                 aria-label="Редактировать изображения товара" @click="openMediaEditor(product.id)" />
+
               <UButton color="error" variant="soft" icon="i-lucide-trash-2"
-                class="admin-touch-icon min-w-0 justify-center rounded-full px-2 text-xs sm:text-sm" aria-label="Удалить товар"
-                :loading="deletingId === product.id" @click="deleteProduct(product)" />
+                class="admin-touch-icon h-11 w-11 min-w-0 justify-self-center rounded-full p-0 sm:!w-full sm:justify-self-stretch sm:!rounded-xl"
+                aria-label="Удалить товар" :loading="deletingId === product.id" @click="deleteProduct(product)" />
             </div>
           </div>
         </article>

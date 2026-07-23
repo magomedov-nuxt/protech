@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-white/30 text-zinc-950">
-    <div class="mx-auto w-full max-w-370 px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+    <div class="mx-auto w-full max-w-370 px-1 py-8 sm:px-6 lg:px-8 lg:py-10">
       <ProductCatalogHero :cart-total="cart.totalItems" />
 
       <ProductCatalogToolbar v-model:search="ui.catalog.search" v-model:category-id="ui.catalog.categoryId"

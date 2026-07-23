@@ -1,7 +1,7 @@
 <template>
   <article role="listitem"
-    class="group overflow-hidden bg-white shadow-sm shadow-zinc-950/5 transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-zinc-950/10"
-    :class="compact ? 'rounded-2xl p-2' : 'rounded-2xl p-2 sm:rounded-3xl sm:p-3'">
+    class="group relative overflow-hidden bg-white shadow-sm shadow-zinc-950/5 transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-zinc-950/10"
+    :class="compact ? 'rounded-2xl p-2' : 'rounded-2xl p-0.5 sm:rounded-3xl sm:p-3'">
     <div class="relative overflow-hidden bg-zinc-100"
       :class="compact ? 'rounded-xl' : 'rounded-xl sm:rounded-[1.45rem]'">
       <NuxtLink :to="`/product/${product.id}`" :aria-label="`Открыть товар ${product.name}`">
@@ -21,7 +21,7 @@
 
       <UTooltip :text="favorite ? 'Убрать из избранного' : 'В избранное'">
         <UButton color="neutral" variant="soft" icon="i-lucide-heart" :size="compact ? 'md' : 'md'" square
-          class="absolute !h-11 !w-11 rounded-full bg-white/90 shadow-sm shadow-zinc-950/10 backdrop-blur transition hover:scale-105 sm:!h-10 sm:!w-10"
+          class="absolute h-11 w-11 rounded-full bg-white/90 shadow-sm shadow-zinc-950/10 backdrop-blur transition hover:scale-105 sm:h-10 sm:w-10"
           :class="[
             compact ? 'right-2 top-2' : 'right-2 top-2 sm:right-4 sm:top-4',
             favorite ? 'text-red-500' : ''
@@ -29,34 +29,19 @@
           :aria-label="favorite ? `Убрать ${product.name} из избранного` : `Добавить ${product.name} в избранное`"
           @click="onToggleFavorite" />
       </UTooltip>
-
-      <UButton :color="inCart ? 'error' : isOutOfStock(product) ? 'neutral' : 'primary'"
-        :variant="inCart ? 'soft' : 'solid'" :icon="cartButtonIcon" :size="compact ? 'md' : 'md'"
-        class="absolute min-h-12 justify-center rounded-full opacity-100 shadow-lg shadow-zinc-950/15 transition duration-300 sm:translate-y-3 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100 sm:group-focus-within:translate-y-0 sm:group-focus-within:opacity-100"
-        :class="[
-          compact ? 'inset-x-2 bottom-2' : 'inset-x-2 bottom-2 sm:inset-x-4 sm:bottom-4',
-          cartButtonClass
-        ]" :disabled="!inCart && isOutOfStock(product)" :loading="loadingCart"
-        :aria-label="cartAriaLabel"
-        @click="onToggleCart">
-        {{ cartButtonLabel }}
-      </UButton>
     </div>
 
-    <div :class="compact ? 'px-1.5 pb-2 pt-3' : 'px-2 pb-3 pt-4'">
-      <div class="flex items-center justify-between gap-3">
-        <p class="truncate text-xs font-medium uppercase text-zinc-400">
-          {{ productBrand(product) }}
-        </p>
-      </div>
-
+    <div :class="compact
+        ? 'px-1.5 pb-16 pt-3'
+        : 'px-2 pb-16 pt-1 sm:pb-16'
+      ">
       <NuxtLink :to="`/product/${product.id}`"
         class="mt-2 line-clamp-2 font-semibold text-zinc-950 transition hover:text-emerald-700"
         :class="compact ? 'min-h-10 text-sm leading-5' : 'min-h-10 text-sm leading-5 sm:min-h-12 sm:text-base sm:leading-6'">
         {{ product.name }}
       </NuxtLink>
 
-      <div class="flex items-end justify-between gap-3" :class="compact ? 'mt-3' : 'mt-4'">
+      <div class="flex items-end justify-between gap-3" :class="compact ? 'mt-3' : 'mt-2'">
         <div class="flex flex-wrap items-baseline gap-2">
           <span class="font-semibold" :class="[
             compact ? 'text-base' : 'text-base sm:text-lg',
@@ -70,13 +55,25 @@
         </div>
       </div>
 
-      <div class="flex items-center gap-1.5 text-xs text-zinc-500" :class="compact ? 'mt-2' : 'mt-3 sm:text-sm'">
+      <div class="flex items-center gap-1.5 text-xs text-zinc-500" :class="compact ? 'mt-2' : 'mt-1 sm:text-sm'">
         <UIcon name="i-lucide-star" class="size-4"
           :class="product.averageRating ? 'fill-amber-400 text-amber-400' : 'text-zinc-300'" />
         <span class="font-medium text-zinc-700">{{ product.averageRating ?? "—" }}</span>
         <span>-</span>
         <span>{{ reviewCountLabel(product.reviewsCount ?? 0) }}</span>
       </div>
+
+      <UButton :color="inCart ? 'error' : isOutOfStock(product) ? 'neutral' : 'primary'"
+        :variant="inCart ? 'soft' : 'solid'" :icon="cartButtonIcon" size="md"
+        class="absolute z-10 min-h-9 justify-center rounded-full opacity-100 shadow-lg shadow-zinc-950/15 sm:min-h-12" :class="[
+          compact
+            ? 'inset-x-2 bottom-2'
+            : 'inset-x-2 bottom-2 sm:inset-x-4 sm:bottom-4',
+          cartButtonClass
+        ]" :disabled="!inCart && isOutOfStock(product)" :loading="loadingCart" :aria-label="cartAriaLabel"
+        @click="onToggleCart">
+        {{ cartButtonLabel }}
+      </UButton>
     </div>
   </article>
 </template>

@@ -1,5 +1,5 @@
 <template>
-  <section class="mb-7 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+  <section class="mb-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between p-2">
     <div class="max-w-3xl">
       <p class="text-sm font-medium uppercase text-emerald-700 ">
         Каталог

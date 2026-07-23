@@ -8,7 +8,7 @@
     :aria-busy="pending" class="mt-6">
     <h2 id="catalog-results-heading" class="sr-only">Товары каталога</h2>
     <div v-auto-animate role="list"
-      class="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+      class="grid grid-cols-1 gap-0.5 min-[360px]:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
       <ProductCatalogCard v-for="(product, index) in products" :key="product.id" :product="product"
         :favorite="favoriteProductIds.includes(product.id)" :in-cart="Boolean(cartItemByProductId(product.id))"
         :cart-quantity="cartItemByProductId(product.id)?.quantity ?? 0"
