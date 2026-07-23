@@ -116,19 +116,23 @@
 
             <div v-else v-auto-animate class="space-y-3">
               <article v-for="message in messages" :key="message.id" class="flex"
-                :class="message.senderRole === 'ADMIN' ? 'justify-end' : 'justify-start'">
-                <div class="max-w-[min(44rem,84%)] rounded-2xl px-4 py-3 shadow-sm" :class="message.senderRole === 'ADMIN'
+                :class="isAdminMessage(message.senderRole) ? 'justify-end' : 'justify-start'">
+                <div class="max-w-[min(44rem,84%)] rounded-2xl px-4 py-3 shadow-sm" :class="isAdminMessage(message.senderRole)
                   ? 'bg-(--admin-accent) text-white shadow-green-950/10'
                   : 'bg-(--admin-surface) text-(--admin-text) ring-1 ring-(--admin-border)'">
-                  <p class="text-xs font-semibold"
-                    :class="message.senderRole === 'ADMIN' ? 'text-white/70' : 'text-(--admin-text-muted)'">
+                  <p class="text-xs font-semibold" :class="isAdminMessage(message.senderRole)
+                    ? 'text-white/70'
+                    : 'text-(--admin-text-muted)'">
                     {{ getSenderLabel(message.senderRole) }}
                   </p>
+
                   <p class="mt-1 whitespace-pre-line text-sm leading-6">
                     {{ message.message }}
                   </p>
-                  <time class="mt-2 block text-xs"
-                    :class="message.senderRole === 'ADMIN' ? 'text-white/65' : 'text-(--admin-text-muted)'">
+
+                  <time class="mt-2 block text-xs" :class="isAdminMessage(message.senderRole)
+                    ? 'text-white/65'
+                    : 'text-(--admin-text-muted)'">
                     {{ formatDate(message.createdAt) }}
                   </time>
                 </div>
@@ -308,6 +312,10 @@ async function loadThread(userId: string) {
   } finally {
     threadPending.value = false;
   }
+}
+
+function isAdminMessage(senderRole: MessageSenderRole) {
+  return senderRole === "ADMIN" || senderRole === "SYSTEM";
 }
 
 async function sendMessage() {

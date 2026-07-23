@@ -2,8 +2,10 @@
   <main class="admin-shell grid min-h-screen place-items-center px-5 py-12" data-admin-theme>
     <UCard class="admin-card w-full max-w-xl" :ui="{ body: 'p-6 sm:p-8' }">
       <div class="mb-7 space-y-5 text-center">
-        <div class="admin-icon-tile mx-auto size-14">
-          <Zap class="size-7" />
+        <div class="mx-auto size-14">
+          <span class="grid size-14 place-items-center overflow-hidden rounded-[1.35rem] shadow-xl shadow-emerald-900/20 transition duration-300 group-hover:rotate-3 group-hover:scale-105">
+            <img src="/logo.png" alt="Логотип ПроТех76" class="size-full object-contain">
+          </span>
         </div>
         <div>
           <h1 class="text-2xl font-semibold text-(--admin-text)">
@@ -61,7 +63,7 @@
 </template>
 
 <script setup lang="ts">
-import { Eye, EyeOff, LockKeyhole, LogIn, Mail, Zap } from "@lucide/vue";
+import { Eye, EyeOff, LockKeyhole, LogIn, Mail } from "@lucide/vue";
 import { z } from "zod";
 import { toast } from "vue-sonner";
 import { clearFieldErrors, getZodFieldErrors, replaceFieldErrors } from "~~/app/shared/lib/zodValidation";
