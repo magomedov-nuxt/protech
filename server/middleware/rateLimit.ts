@@ -31,7 +31,9 @@ const rules: RateLimitRule[] = [
     name: "upload",
     max: getPositiveIntegerEnv("RATE_LIMIT_UPLOAD_MAX", 20),
     windowMs: getPositiveIntegerEnv("RATE_LIMIT_UPLOAD_WINDOW_MS", 60_000),
-    matches: (path) => path.startsWith("/api/admin/upload")
+    matches: (path) =>
+      path.startsWith("/api/admin/upload") ||
+      path.startsWith("/api/public/upload")
   },
   {
     name: "cart_order",

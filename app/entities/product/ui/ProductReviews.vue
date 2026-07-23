@@ -94,6 +94,35 @@
                   :rows="4" variant="none" placeholder="Поделитесь опытом использования" :ui="reviewTextareaUi" />
               </UFormField>
 
+              <UFormField label="Фото">
+                <div class="space-y-3">
+                  <div v-if="pendingPhotos.length" class="flex flex-wrap gap-3">
+                    <div v-for="(photo, index) in pendingPhotos" :key="photo.previewUrl"
+                      class="group relative size-20 shrink-0 overflow-hidden rounded-2xl bg-white shadow-sm shadow-zinc-950/10">
+                      <img :src="photo.previewUrl" alt="" class="size-full object-cover">
+                      <UButton color="error" variant="soft" type="button" size="xs" square
+                        class="absolute right-1 top-1 rounded-full bg-white/95 opacity-0 shadow-lg transition group-hover:opacity-100"
+                        aria-label="Удалить фото" @click="removePendingPhoto(index)">
+                        <UIcon name="i-lucide-x" class="size-3.5" />
+                      </UButton>
+                    </div>
+                  </div>
+
+                  <div class="flex flex-wrap items-center gap-3">
+                    <input ref="photoInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple
+                      hidden @change="addReviewPhotos">
+                    <UButton color="neutral" variant="soft" type="button" icon="i-lucide-image-plus"
+                      class="min-h-11 rounded-full" :disabled="pendingPhotos.length >= 10 || uploadingPhotos"
+                      :loading="uploadingPhotos" @click="openPhotoPicker">
+                      Добавить фото
+                    </UButton>
+                    <p class="text-sm text-zinc-500">
+                      До 10 фото, максимум 5 МБ каждое
+                    </p>
+                  </div>
+                </div>
+              </UFormField>
+
               <div class="flex justify-end">
                 <UButton color="primary" icon="i-lucide-send"
                   class="min-h-11 rounded-full transition duration-300 hover:scale-[1.02]" type="submit" :loading="submitting">
@@ -221,6 +250,10 @@ import { useAuthStore } from "~~/app/stores/auth";
 type ReviewSort = "newest" | "highest" | "lowest";
 type RatingFilter = "all" | 1 | 2 | 3 | 4 | 5;
 type ReviewPhoto = ReviewItem["reviewPhotos"][number];
+type PendingReviewPhoto = {
+  file: File;
+  previewUrl: string;
+};
 
 const props = defineProps<{
   productId: number;
@@ -235,6 +268,9 @@ const route = useRoute();
 const auth = useAuthStore();
 const reviewFormOpen = ref(false);
 const submitting = ref(false);
+const uploadingPhotos = ref(false);
+const photoInput = ref<HTMLInputElement | null>(null);
+const pendingPhotos = ref<PendingReviewPhoto[]>([]);
 const reviewSort = ref<ReviewSort>("newest");
 const ratingFilter = ref<RatingFilter>("all");
 const visibleCount = ref(3);
@@ -368,6 +404,48 @@ function nextReviewPhoto() {
     : activeReviewPhotoIndex.value + 1;
 }
 
+function clearPendingPhotos() {
+  for (const photo of pendingPhotos.value) {
+    URL.revokeObjectURL(photo.previewUrl);
+  }
+
+  pendingPhotos.value = [];
+}
+
+function openPhotoPicker() {
+  if (!uploadingPhotos.value && pendingPhotos.value.length < 10) {
+    photoInput.value?.click();
+  }
+}
+
+function addReviewPhotos(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const files = input.files;
+
+  if (!files?.length) {
+    return;
+  }
+
+  const remaining = 10 - pendingPhotos.value.length;
+
+  for (const file of Array.from(files).slice(0, remaining)) {
+    pendingPhotos.value.push({
+      file,
+      previewUrl: URL.createObjectURL(file)
+    });
+  }
+
+  input.value = "";
+}
+
+function removePendingPhoto(index: number) {
+  const [photo] = pendingPhotos.value.splice(index, 1);
+
+  if (photo) {
+    URL.revokeObjectURL(photo.previewUrl);
+  }
+}
+
 async function requireAuth() {
   if (auth.user || await auth.fetchMe()) {
     return true;
@@ -386,13 +464,32 @@ async function submitReview() {
   submitting.value = true;
 
   try {
+    const reviewPhotos: Array<{ url: string }> = [];
+
+    if (pendingPhotos.value.length) {
+      uploadingPhotos.value = true;
+
+      for (const photo of pendingPhotos.value) {
+        const formData = new FormData();
+        formData.append("file", photo.file);
+
+        const result = await shopFetch<{ url: string }>("/api/public/upload", {
+          method: "POST",
+          body: formData
+        });
+
+        reviewPhotos.push({ url: result.url });
+      }
+    }
+
     await shopFetch(`/api/public/product/review/add/${props.productId}`, {
       method: "POST",
       body: {
         rating: form.rating,
         advantages: form.advantages.trim() || undefined,
         disadvantages: form.disadvantages.trim() || undefined,
-        comment: form.comment.trim() || undefined
+        comment: form.comment.trim() || undefined,
+        reviewPhotos: reviewPhotos.length ? reviewPhotos : undefined
       }
     });
 
@@ -400,6 +497,7 @@ async function submitReview() {
     form.advantages = "";
     form.disadvantages = "";
     form.comment = "";
+    clearPendingPhotos();
     reviewFormOpen.value = false;
     toast.success("Отзыв опубликован");
     emit("refresh");
@@ -407,10 +505,19 @@ async function submitReview() {
     toast.error(getErrorMessage(error, "Не удалось отправить отзыв"));
   } finally {
     submitting.value = false;
+    uploadingPhotos.value = false;
   }
 }
 
 function toggleReviewForm() {
+  if (reviewFormOpen.value) {
+    clearPendingPhotos();
+  }
+
   reviewFormOpen.value = !reviewFormOpen.value;
 }
+
+onBeforeUnmount(() => {
+  clearPendingPhotos();
+});
 </script>

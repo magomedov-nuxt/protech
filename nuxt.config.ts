@@ -238,11 +238,6 @@ export default defineNuxtConfig({
         "cache-control": "public, max-age=31536000, immutable"
       }
     },
-    "/uploads/**": {
-      headers: {
-        "cache-control": "public, max-age=604800, stale-while-revalidate=86400"
-      }
-    },
     "/favicon.ico": {
       headers: {
         "cache-control": "public, max-age=86400"

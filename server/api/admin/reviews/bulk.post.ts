@@ -1,5 +1,6 @@
 import { AuditAction } from "@prisma/client";
 import { bulkReviewsSchema } from "~~/shared/schemas/admin/reviews/bulkReviews";
+import { deleteStoredImages } from "../../../utils/uploadImage";
 
 const reviewBulkSummary: Record<string, string> = {
   delete: "Bulk deleted reviews",
@@ -10,6 +11,19 @@ const reviewBulkSummary: Record<string, string> = {
 export default defineEventHandler(async (event) => {
   const { userId } = await requireAdmin(event);
   const body = await validateBody(event, bulkReviewsSchema);
+
+  if (body.action === "delete") {
+    const reviews = await prisma.review.findMany({
+      where: { id: { in: body.reviewIds } },
+      select: {
+        reviewPhotos: { select: { url: true } }
+      }
+    });
+
+    await deleteStoredImages(
+      reviews.flatMap((review) => review.reviewPhotos.map((photo) => photo.url))
+    );
+  }
 
   const result = body.action === "delete"
     ? await prisma.review.deleteMany({

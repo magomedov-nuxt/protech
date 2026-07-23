@@ -1,5 +1,6 @@
 import { AuditAction, Prisma } from "@prisma/client";
 import { updateProductSchema } from "~~/shared/schemas/admin/products/updateProduct";
+import { deleteStoredImages, getRemovedImageUrls } from "../../../../utils/uploadImage";
 
 export default defineEventHandler(async (event) => {
   const { userId } = await requireAdmin(event);
@@ -47,6 +48,19 @@ export default defineEventHandler(async (event) => {
   if (priceChanged && body.oldPrice === undefined) {
     data.oldPrice = existingProduct!.currentPrice;
   }
+
+  const shouldSyncImages =
+    body.mainImage !== undefined || body.productImages !== undefined;
+
+  const existingImages = shouldSyncImages
+    ? await prisma.product.findUnique({
+      where: { id: productId },
+      select: {
+        mainImage: true,
+        productImages: { select: { url: true } }
+      }
+    })
+    : null;
 
   if (body.productImages !== undefined) {
     data.productImages = {
@@ -96,6 +110,21 @@ export default defineEventHandler(async (event) => {
           article: true
         }
       });
+
+    if (existingImages) {
+      const oldUrls = [
+        existingImages.mainImage,
+        ...existingImages.productImages.map((image) => image.url)
+      ];
+      const newUrls = [
+        body.mainImage ?? existingImages.mainImage,
+        ...(body.productImages ?? existingImages.productImages).map((image) =>
+          typeof image === "string" ? image : image.url
+        )
+      ];
+
+      await deleteStoredImages(getRemovedImageUrls(oldUrls, newUrls));
+    }
 
     await recordAdminAudit({
       adminId: userId,

@@ -1,4 +1,5 @@
 import { AuditAction } from "@prisma/client";
+import { deleteStoredImages } from "../../../../utils/uploadImage";
 
 export default defineEventHandler(async (event) => {
   const { userId } = await requireAdmin(event);
@@ -8,12 +9,26 @@ export default defineEventHandler(async (event) => {
   try {
     const review = await prisma.review.findUnique({
       where: { id: reviewId },
-      select: { id: true, productId: true, userId: true }
+      select: {
+        id: true,
+        productId: true,
+        userId: true,
+        reviewPhotos: { select: { url: true } }
+      }
     });
+
+    if (!review) {
+      throw createError({
+        statusCode: 404,
+        message: "Отзыв не найден"
+      });
+    }
 
     await prisma.review.delete({
       where: { id: reviewId }
     });
+
+    await deleteStoredImages(review.reviewPhotos.map((photo) => photo.url));
 
     await recordAdminAudit({
       adminId: userId,

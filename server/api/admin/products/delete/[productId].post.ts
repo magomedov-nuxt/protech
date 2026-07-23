@@ -1,4 +1,5 @@
 import { AuditAction } from "@prisma/client";
+import { deleteStoredImages } from "../../../../utils/uploadImage";
 
 export default defineEventHandler(async (event) => {
   const { userId } = await requireAdmin(event);
@@ -8,12 +9,30 @@ export default defineEventHandler(async (event) => {
   try {
     const product = await prisma.product.findUnique({
       where: { id: productId },
-      select: { id: true, name: true, article: true }
+      select: {
+        id: true,
+        name: true,
+        article: true,
+        mainImage: true,
+        productImages: { select: { url: true } }
+      }
     });
+
+    if (!product) {
+      throw createError({
+        statusCode: 404,
+        message: "Товар не найден"
+      });
+    }
 
     await prisma.product.delete({
       where: { id: productId }
     });
+
+    await deleteStoredImages([
+      product.mainImage,
+      ...product.productImages.map((image) => image.url)
+    ]);
 
     await recordAdminAudit({
       adminId: userId,

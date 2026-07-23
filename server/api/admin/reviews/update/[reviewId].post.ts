@@ -1,5 +1,6 @@
 import { AuditAction, type Prisma } from "@prisma/client";
 import { updateReviewSchema } from "~~/shared/schemas/user/reviews/updateReview";
+import { deleteStoredImages, getRemovedImageUrls } from "../../../../utils/uploadImage";
 
 export default defineEventHandler(async (event) => {
   const { userId } = await requireAdmin(event);
@@ -12,6 +13,15 @@ export default defineEventHandler(async (event) => {
   if (body.advantages !== undefined) data.advantages = body.advantages;
   if (body.disadvantages !== undefined) data.disadvantages = body.disadvantages;
   if (body.comment !== undefined) data.comment = body.comment;
+
+  const existingPhotos = body.reviewPhotos !== undefined
+    ? await prisma.review.findUnique({
+      where: { id: reviewId },
+      select: {
+        reviewPhotos: { select: { url: true } }
+      }
+    })
+    : null;
 
   data.isAnswered = false;
 
@@ -36,6 +46,13 @@ export default defineEventHandler(async (event) => {
         id: true
       }
     });
+
+    if (existingPhotos) {
+      const oldUrls = existingPhotos.reviewPhotos.map((photo) => photo.url);
+      const newUrls = (body.reviewPhotos ?? []).map((photo) => photo.url);
+
+      await deleteStoredImages(getRemovedImageUrls(oldUrls, newUrls));
+    }
 
     await recordAdminAudit({
       adminId: userId,

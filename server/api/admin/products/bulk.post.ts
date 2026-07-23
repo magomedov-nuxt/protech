@@ -1,5 +1,6 @@
 import { AuditAction } from "@prisma/client";
 import { bulkProductsSchema } from "~~/shared/schemas/admin/products/bulkProducts";
+import { deleteStoredImages } from "../../../utils/uploadImage";
 
 const productBulkSummary: Record<string, string> = {
   activate: "Bulk activated products",
@@ -27,6 +28,23 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
+    if (body.action === "delete") {
+      const products = await prisma.product.findMany({
+        where: { id: { in: body.productIds } },
+        select: {
+          mainImage: true,
+          productImages: { select: { url: true } }
+        }
+      });
+
+      await deleteStoredImages(
+        products.flatMap((product) => [
+          product.mainImage,
+          ...product.productImages.map((image) => image.url)
+        ])
+      );
+    }
+
     const result = body.action === "delete"
       ? await prisma.product.deleteMany({
         where: { id: { in: body.productIds } }

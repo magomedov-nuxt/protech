@@ -1,9 +1,13 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
-import { extname, join, resolve } from "node:path";
+import { extname } from "node:path";
 import { Buffer } from "node:buffer";
+import {
+  DeleteObjectsCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 
-const DEFAULT_UPLOAD_PUBLIC_PATH = "/uploads";
+const DEFAULT_KEY_PREFIX = "uploads";
 
 const ALLOWED_MIME = new Set([
   "image/jpeg",
@@ -27,21 +31,68 @@ type UploadPart = {
   filename?: string;
 };
 
-function getUploadDir() {
-  const configuredDir = process.env.UPLOAD_DIR?.trim();
+type S3Config = {
+  region: string;
+  bucket: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+};
 
-  return configuredDir ? resolve(configuredDir) : join(process.cwd(), "public", "uploads");
-}
+let s3Client: S3Client | null = null;
 
-function getUploadPublicPath() {
-  const value = process.env.UPLOAD_PUBLIC_PATH?.trim() || DEFAULT_UPLOAD_PUBLIC_PATH;
-  const normalized = value.replace(/^\/+|\/+$/g, "");
+function getS3Config(): S3Config {
+  const region = process.env.AWS_REGION?.trim();
+  const bucket = process.env.AWS_S3_BUCKET?.trim();
+  const accessKeyId = process.env.AWS_ACCESS_KEY_ID?.trim();
+  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY?.trim();
 
-  if (!normalized || normalized.includes("..") || !/^[a-z0-9/_-]+$/i.test(normalized)) {
-    return DEFAULT_UPLOAD_PUBLIC_PATH;
+  if (!region || !bucket || !accessKeyId || !secretAccessKey) {
+    throw createError({
+      statusCode: 500,
+      message: "S3-хранилище не настроено",
+    });
   }
 
-  return `/${normalized}`;
+  return { region, bucket, accessKeyId, secretAccessKey };
+}
+
+function getS3Client() {
+  if (!s3Client) {
+    const { region, accessKeyId, secretAccessKey } = getS3Config();
+
+    s3Client = new S3Client({
+      region,
+      credentials: {
+        accessKeyId,
+        secretAccessKey,
+      },
+    });
+  }
+
+  return s3Client;
+}
+
+function getKeyPrefix() {
+  const prefix = process.env.S3_KEY_PREFIX?.trim() || DEFAULT_KEY_PREFIX;
+  const normalized = prefix.replace(/^\/+|\/+$/g, "");
+
+  return normalized || DEFAULT_KEY_PREFIX;
+}
+
+function getPublicBaseUrl() {
+  const customUrl = process.env.S3_PUBLIC_URL?.trim();
+
+  if (customUrl) {
+    return customUrl.replace(/\/+$/, "");
+  }
+
+  const { bucket, region } = getS3Config();
+
+  return `https://${bucket}.s3.${region}.amazonaws.com`;
+}
+
+function buildPublicUrl(key: string) {
+  return `${getPublicBaseUrl()}/${key}`;
 }
 
 function hasValidImageSignature(mime: string, data: Buffer) {
@@ -63,6 +114,42 @@ function hasValidImageSignature(mime: string, data: Buffer) {
   }
 }
 
+export function getStorageKeyFromUrl(url: string): string | null {
+  const trimmed = url.trim();
+
+  if (!trimmed) {
+    return null;
+  }
+
+  const publicBase = getPublicBaseUrl();
+
+  if (trimmed.startsWith(`${publicBase}/`)) {
+    return trimmed.slice(publicBase.length + 1);
+  }
+
+  const { bucket, region } = getS3Config();
+  const standardBase = `https://${bucket}.s3.${region}.amazonaws.com`;
+
+  if (trimmed.startsWith(`${standardBase}/`)) {
+    return trimmed.slice(standardBase.length + 1);
+  }
+
+  const prefix = getKeyPrefix();
+  const localPattern = new RegExp(`^/${prefix}/(.+)$`, "i");
+
+  if (localPattern.test(trimmed)) {
+    return trimmed.replace(/^\//, "");
+  }
+
+  return null;
+}
+
+export function getRemovedImageUrls(oldUrls: string[], newUrls: string[]) {
+  const next = new Set(newUrls.filter(Boolean));
+
+  return oldUrls.filter((url) => url && !next.has(url));
+}
+
 export async function saveUploadedImage(file: UploadPart): Promise<string> {
   if (!file.data?.length) {
     throw createError({ statusCode: 400, message: "Файл пуст" });
@@ -76,6 +163,7 @@ export async function saveUploadedImage(file: UploadPart): Promise<string> {
   }
 
   const mime = file.type?.toLowerCase() ?? "";
+
   if (!ALLOWED_MIME.has(mime)) {
     throw createError({
       statusCode: 400,
@@ -90,15 +178,52 @@ export async function saveUploadedImage(file: UploadPart): Promise<string> {
     });
   }
 
-  const uploadDir = getUploadDir();
-  await mkdir(uploadDir, { recursive: true });
-
   const ext =
     EXT_BY_MIME[mime] ||
     extname(file.filename ?? "").toLowerCase() ||
     ".jpg";
-  const filename = `${randomUUID()}${ext}`;
-  await writeFile(join(uploadDir, filename), file.data);
+  const key = `${getKeyPrefix()}/${randomUUID()}${ext}`;
+  const { bucket } = getS3Config();
 
-  return `${getUploadPublicPath()}/${filename}`;
+  await getS3Client().send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: file.data,
+      ContentType: mime,
+      CacheControl: "public, max-age=31536000, immutable",
+    }),
+  );
+
+  return buildPublicUrl(key);
+}
+
+export async function deleteStoredImages(urls: string[]) {
+  const keys = [
+    ...new Set(
+      urls
+        .map((url) => getStorageKeyFromUrl(url))
+        .filter((key): key is string => Boolean(key)),
+    ),
+  ];
+
+  if (!keys.length) {
+    return;
+  }
+
+  const { bucket } = getS3Config();
+
+  try {
+    await getS3Client().send(
+      new DeleteObjectsCommand({
+        Bucket: bucket,
+        Delete: {
+          Objects: keys.map((Key) => ({ Key })),
+          Quiet: true,
+        },
+      }),
+    );
+  } catch (error) {
+    console.error("Failed to delete images from S3", error);
+  }
 }
