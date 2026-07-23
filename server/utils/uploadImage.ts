@@ -34,6 +34,7 @@ type UploadPart = {
 type S3Config = {
   region: string;
   bucket: string;
+  endpoint: string;
   accessKeyId: string;
   secretAccessKey: string;
 };
@@ -43,6 +44,8 @@ let s3Client: S3Client | null = null;
 function getS3Config(): S3Config {
   const region = process.env.AWS_REGION?.trim();
   const bucket = process.env.AWS_S3_BUCKET?.trim();
+  const endpoint =
+    process.env.S3_ENDPOINT?.trim() || "https://s3.twcstorage.ru";
   const accessKeyId = process.env.AWS_ACCESS_KEY_ID?.trim();
   const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY?.trim();
 
@@ -53,15 +56,28 @@ function getS3Config(): S3Config {
     });
   }
 
-  return { region, bucket, accessKeyId, secretAccessKey };
+  return {
+    region,
+    bucket,
+    endpoint,
+    accessKeyId,
+    secretAccessKey,
+  };
 }
 
 function getS3Client() {
   if (!s3Client) {
-    const { region, accessKeyId, secretAccessKey } = getS3Config();
+    const {
+      region,
+      endpoint,
+      accessKeyId,
+      secretAccessKey,
+    } = getS3Config();
 
     s3Client = new S3Client({
       region,
+      endpoint,
+      forcePathStyle: true,
       credentials: {
         accessKeyId,
         secretAccessKey,
@@ -86,9 +102,9 @@ function getPublicBaseUrl() {
     return customUrl.replace(/\/+$/, "");
   }
 
-  const { bucket, region } = getS3Config();
+  const { bucket, endpoint } = getS3Config();
 
-  return `https://${bucket}.s3.${region}.amazonaws.com`;
+  return `${endpoint.replace(/\/+$/, "")}/${bucket}`;
 }
 
 function buildPublicUrl(key: string) {
