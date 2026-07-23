@@ -182,7 +182,6 @@ export default defineNuxtConfig({
       headers: securityHeaders
     },
     "/": {
-      swr: 300,
       robots: {
         index: true,
         follow: true,
@@ -190,7 +189,6 @@ export default defineNuxtConfig({
       },
     },
     "/product/**": {
-      swr: 600,
       robots: {
         index: true,
         follow: true,
@@ -247,7 +245,13 @@ export default defineNuxtConfig({
       headers: {
         "cache-control": "public, max-age=86400"
       }
-    }
+    },
+    "/api/**": {
+      cache: false,
+      headers: {
+        "cache-control": "no-store, no-cache, must-revalidate"
+      }
+    },
   },
   nitro: {
     compressPublicAssets: true,
