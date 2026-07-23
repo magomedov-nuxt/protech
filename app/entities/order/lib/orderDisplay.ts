@@ -30,7 +30,7 @@ export const orderStatusMeta: Record<OrderStatus, StatusMeta> = {
     class: "bg-indigo-50 text-indigo-700  ",
     dotClass: "bg-indigo-500",
     icon: "i-lucide-truck",
-    label: "Доставлен"
+    label: "Отправлен"
   },
   COMPLETED: {
     class: "bg-emerald-50 text-emerald-700  ",

@@ -30,9 +30,9 @@
               {{ socketConnected ? "онлайн" : "история" }}
             </UBadge>
           </div>
-          <div class="rounded-2xl bg-[#f9fafb] p-1.5 shadow-inner shadow-zinc-950/5">
-            <UInput v-model="search" icon="i-lucide-search" placeholder="Найти пользователя" size="lg" variant="none"
-              :ui="adminInputUi" />
+          <div class="rounded-3xl bg-[#f9fafb] p-1.5 shadow-inner shadow-zinc-950/5">
+            <UInput v-model="search" icon="i-lucide-search" placeholder="Найти пользователя" size="xl" variant="none"
+              class="w-full" :ui="adminInputUi" />
           </div>
         </div>
 
